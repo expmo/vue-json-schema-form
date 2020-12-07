@@ -1,6 +1,7 @@
 <template>
     <div v-loading="loading">
         <EditorHeader default-active="4">
+            <el-button @click="handleImportSchema">导入Schema</el-button>
             <el-button plain @click="handleToDemo">Playground中验证</el-button>
             <el-button type="primary" plain @click="handlePreview">预览展示</el-button>
             <el-button type="primary" @click="handleExportSchema">导出Schema</el-button>
@@ -107,6 +108,8 @@
     import FormConfSchema from './viewComponents/FormConf';
     import EditorToolBar from './EditorToolBar.vue';
     import ExportSchemaView from './components/ExportSchemaView.vue';
+    import ImportSchemaView from './components/ImportSchemaView.vue';
+
 
     import { deepFreeze } from './common/utils';
 
@@ -115,7 +118,7 @@
     import './common/registerExtraElementComponent';
 
     import NestedEditor from './components/NestedEditor';
-    import { componentList2JsonSchema, formatFormLabelWidth } from './common/editorData';
+    import { componentList2JsonSchema, jsonSchema2ComponentList, formatFormLabelWidth } from './common/editorData';
 
     deepFreeze(configTools);
 
@@ -233,6 +236,20 @@
                         'on-submit': (data) => {
                             // eslint-disable-next-line no-alert
                             alert(JSON.stringify(data, null, 2));
+                        }
+                    }
+                });
+            },
+            handleImportSchema() {
+                componentWithDialog({
+                    VueComponent: ImportSchemaView,
+                    dialogProps: {
+                        title: '导入Schema',
+                        width: '1000px'
+                    },
+                    componentListeners: {
+                        onImport: (code) => {
+                            const data = jsonSchema2ComponentList(code);
                         }
                     }
                 });
