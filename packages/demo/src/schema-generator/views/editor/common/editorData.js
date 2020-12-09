@@ -4,19 +4,7 @@
 
 import { getDefaultFormState } from '@lljj/vue-json-schema-form';
 import { genId } from '@/_common/utils/id';
-
-function isObject(obj) {
-    return (Object.prototype.toString.call(obj) === '[object Object]');
-}
-
-function isEmptyObject(obj) {
-    for (const key in obj) {
-        if (Object.prototype.hasOwnProperty.call(obj, key)) {
-            return false;
-        }
-    }
-    return true;
-}
+import { isObject, isEmptyObject } from './utils';
 
 // 生成一个新的editor item
 export function generateEditorItem(toolItem) {

@@ -251,6 +251,7 @@
                     componentListeners: {
                         onImport: (code) => {
                             const data = jsonSchema2ComponentList(code, this.configTools);
+                            Object.assign(this, data);
                         }
                     }
                 });

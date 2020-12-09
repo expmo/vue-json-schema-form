@@ -4,6 +4,7 @@
 
 import { formUtils } from '@lljj/vue-json-schema-form';
 import { generateEditorItem } from './editorData';
+import { isObject } from './utils';
 
 function flatToolItems(toolItems) {
     return toolItems.reduce((preVal, curVal) => [
@@ -13,17 +14,60 @@ function flatToolItems(toolItems) {
 }
 
 
-function viewSchemaIncludes(target, item) {
-    if (target.type === item.type) {
+// const getDefaultFormDataBySchema = (() => {
+//     // cache
+//     const cacheValueMap = new Map();
+//
+//     return (schema) => {
+//
+//     };
+// })();
 
-    }
+function schemaIncludes(target = {}, baseSchema = {}) {
+    const keys = Object.keys(baseSchema);
+    return keys.every((k) => {
+        // 跳过title 属性
+        if (k === 'title') return true;
 
-    return false;
+        // Array 类型暂不需要对比
+        if (Array.isArray(target[k])) {
+            return true;
+        }
+
+        // 对象递归
+        if (isObject(target[k]) && isObject(baseSchema[k])) {
+            return schemaIncludes(target[k], baseSchema[k]);
+        }
+
+        return target[k] === baseSchema[k];
+    });
 }
 
-function getUserConfigByViewSchema(viewSchema, toolConfigList) {
-    const toolItem = toolConfigList.find(item => viewSchemaIncludes(viewSchema, item));
-    debugger;
+function viewSchemaMatch(target, toolItem) {
+    const baseViewSchema = toolItem.componentPack.viewSchema;
+
+    // 计算 target 包含 toolItem
+    // type:string enum 单选类型是个例外。
+    // 这样区分有点乱，考虑基础组件拆开单选类型
+    return schemaIncludes(target, baseViewSchema) && (target.enum ? baseViewSchema.title === '单选类型' : true);
+}
+
+function getUserConfigByViewSchema(curSchema, toolConfigList) {
+    const toolItem = toolConfigList.find(item => viewSchemaMatch(curSchema, item));
+
+    if (toolItem) {
+        return generateEditorItem({
+            ...toolItem,
+
+            // todo:计算默认值
+            componentValue: {}
+        });
+    }
+
+    // 异常数据
+    this.$alert(JSON.stringify(curSchema), '当前节点匹配失败');
+
+    return null;
 }
 
 export default function jsonSchema2ComponentList(code, toolItems) {
@@ -50,11 +94,6 @@ export default function jsonSchema2ComponentList(code, toolItems) {
                 const curObjNode = curSchema.properties ? curSchema : curSchema.items;
 
                 // 计算当前节点
-                // const curItem = {
-                //     type: 'object-array',
-                //     childList: []
-                // };
-
                 const curItem = getUserConfigByViewSchema(curSchema, toolConfigList);
 
                 // 关联父子
@@ -73,24 +112,24 @@ export default function jsonSchema2ComponentList(code, toolItems) {
                 eachQueue = [...eachQueue, ...childSchema];
             } else {
                 // 计算当前节点
-                // const curItem = {
-                //     type: 'item'
-                // };
                 const curItem = getUserConfigByViewSchema(curSchema, toolConfigList);
 
                 // 关联父子
-                (getChildList(curSchema)).push(curItem);
+                if (curItem) {
+                    (getChildList(curSchema)).push(curItem);
+                }
             }
         }
 
         return {
-            componentList,
+            componentList: componentList[0].childList,
             formConfig: {
-                ...formFooter,
-                ...formProps
+                formFooter,
+                formProps
             }
         };
     } catch (e) {
+        this.$message.error('导入失败，检查控制台报错信息');
         throw e;
     }
 }

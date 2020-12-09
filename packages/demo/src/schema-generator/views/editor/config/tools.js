@@ -37,11 +37,11 @@ const tools = [
             title: '输入框',
             componentPack: componentPackInput
         }, {
+            title: '数字（slider）', // 这里顺便必须在 componentPackInputNumber 前，导入匹配的时候优先匹配
+            componentPack: componentPackSlider
+        }, {
             title: '数字输入框',
             componentPack: componentPackInputNumber
-        }, {
-            title: '数字（slider）',
-            componentPack: componentPackSlider
         }, {
             title: '是否选择',
             componentPack: componentPackSelectBoolean
