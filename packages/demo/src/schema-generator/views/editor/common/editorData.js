@@ -2,7 +2,7 @@
  * Created by Liu.Jun on 2020/3/31 11:30 上午.
  */
 
-import { getDefaultFormState, formUtils } from '@lljj/vue-json-schema-form';
+import { getDefaultFormState } from '@lljj/vue-json-schema-form';
 import { genId } from '@/_common/utils/id';
 
 function isObject(obj) {
@@ -230,54 +230,4 @@ export function componentList2JsonSchema(componentList) {
     }
 
     return baseObj;
-}
-
-
-export function jsonSchema2ComponentList(code) {
-    try {
-        const data = JSON.parse(code);
-        const {
-            schema, formFooter, formProps, uiSchema,
-        } = data;
-
-        // 广度队列
-        const eachQueue = [schema];
-
-        // 记录输出的list
-        const componentList = [];
-
-        // 通过引用类型关联数据
-        let tempParent = componentList;
-
-        while (eachQueue.length > 0) {
-            const curSchema = eachQueue.shift();
-
-            if (curSchema.properties) {
-                // 对象
-                const properties = Object.keys(schema.properties || {});
-                const orderedProperties = formUtils.orderProperties(properties, curSchema['ui:order']);
-
-                // 计算editorItem，直接修改原数据了
-                curSchema.properties = {};
-                delete curSchema['ui:order'];
-
-                const editorItem = generateEditorItem({
-                    componentPack: {
-                        curSchema
-                    }
-                });
-
-                editorItem.childList = [];
-                tempParent.push(editorItem);
-
-                // 初始化子节点
-                tempParent = tempParent.concat(orderedProperties);
-            } else if (curSchema.items && curSchema.items.properties) {
-                // 数组内包含对象
-
-            }
-        }
-    } catch (e) {
-        throw e;
-    }
 }

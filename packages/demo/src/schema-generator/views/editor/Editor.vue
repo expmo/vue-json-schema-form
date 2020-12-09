@@ -118,7 +118,8 @@
     import './common/registerExtraElementComponent';
 
     import NestedEditor from './components/NestedEditor';
-    import { componentList2JsonSchema, jsonSchema2ComponentList, formatFormLabelWidth } from './common/editorData';
+    import { componentList2JsonSchema, formatFormLabelWidth } from './common/editorData';
+    import jsonSchema2ComponentList from './common/jsonSchema2ComponentList';
 
     deepFreeze(configTools);
 
@@ -249,7 +250,7 @@
                     },
                     componentListeners: {
                         onImport: (code) => {
-                            const data = jsonSchema2ComponentList(code);
+                            const data = jsonSchema2ComponentList(code, this.configTools);
                         }
                     }
                 });
