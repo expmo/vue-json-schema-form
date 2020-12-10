@@ -45,10 +45,10 @@ function viewSchemaMatch(target, toolItem) {
     const baseViewSchema = toolItem.componentPack.viewSchema;
 
     // 计算 target 包含 toolItem
-    // type:string enum 单选类型是个例外。
-    // 这样区分有点乱，考虑基础组件拆开单选类型
+    // 如果导入的属性包含了 ui:widget 那原始值也必须包含
     return schemaIncludes(target, baseViewSchema)
-        && (target.enum ? baseViewSchema.title === '单选类型' : true);
+        && (target['ui:widget'] ? !!baseViewSchema['ui:widget'] : true)
+        && (target.format ? !!baseViewSchema.format : true);
 }
 
 const errorNode = [];
@@ -125,6 +125,7 @@ export default function jsonSchema2ComponentList(code, toolItems) {
             eachQueue = [...eachQueue, ...childSchema];
         } else {
             // 计算当前节点
+            debugger;
             const curItem = getUserConfigByViewSchema(curSchema, toolConfigList);
 
             // 关联父子
