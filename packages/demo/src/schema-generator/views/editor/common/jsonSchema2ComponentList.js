@@ -30,9 +30,7 @@ function schemaIncludes(target = {}, baseSchema = {}) {
         if (k === 'title') return true;
 
         // Array 类型暂不需要对比
-        if (Array.isArray(target[k])) {
-            return true;
-        }
+        if (Array.isArray(target[k])) return true;
 
         // 对象递归
         if (isObject(target[k]) && isObject(baseSchema[k])) {
@@ -49,8 +47,11 @@ function viewSchemaMatch(target, toolItem) {
     // 计算 target 包含 toolItem
     // type:string enum 单选类型是个例外。
     // 这样区分有点乱，考虑基础组件拆开单选类型
-    return schemaIncludes(target, baseViewSchema) && (target.enum ? baseViewSchema.title === '单选类型' : true);
+    return schemaIncludes(target, baseViewSchema)
+        && (target.enum ? baseViewSchema.title === '单选类型' : true);
 }
+
+const errorNode = [];
 
 function getUserConfigByViewSchema(curSchema, toolConfigList) {
     const toolItem = toolConfigList.find(item => viewSchemaMatch(curSchema, item));
@@ -64,72 +65,81 @@ function getUserConfigByViewSchema(curSchema, toolConfigList) {
         });
     }
 
-    // 异常数据
-    this.$alert(JSON.stringify(curSchema), '当前节点匹配失败');
+    // 错误只记录 title 和type
+    errorNode.push({
+        title: curSchema.title,
+        type: curSchema.type,
+    });
 
+    // 异常数据
     return null;
 }
 
 export default function jsonSchema2ComponentList(code, toolItems) {
+    // 清空错误信息
+    errorNode.length = 0;
+
+    if (String(code).trim() === '') return null;
+
     const toolConfigList = flatToolItems(toolItems);
-    try {
-        const data = JSON.parse(code);
-        const {
-            schema, formFooter, formProps, /* uiSchema, */
-        } = data;
+    const data = JSON.parse(code);
+    const {
+        schema, formFooter, formProps, /* uiSchema, */
+    } = data;
 
-        // 广度队列
-        let eachQueue = [schema];
+    // 广度队列
+    let eachQueue = [schema];
 
-        // 记录输出的list
-        const componentList = [];
+    // 记录输出的list
+    const componentList = [];
 
-        const getChildList = curSchema => (curSchema.$$parentNode && curSchema.$$parentNode.childList) || componentList;
+    const getChildList = (curSchema) => {
+        const res = (curSchema.$$parentNode && curSchema.$$parentNode.childList) || componentList;
+        delete curSchema.$$parentNode;
+        return res;
+    };
 
-        while (eachQueue.length > 0) {
-            const curSchema = eachQueue.shift();
+    while (eachQueue.length > 0) {
+        const curSchema = eachQueue.shift();
 
-            if (curSchema.properties || (curSchema.items && curSchema.items.properties)) {
-                // 对象 || 数组内对象
-                const curObjNode = curSchema.properties ? curSchema : curSchema.items;
+        if (curSchema.properties || (curSchema.items && curSchema.items.properties)) {
+            // 对象 || 数组内对象
+            const curObjNode = curSchema.properties ? curSchema : curSchema.items;
 
-                // 计算当前节点
-                const curItem = getUserConfigByViewSchema(curSchema, toolConfigList);
+            // 计算当前节点
+            const curItem = getUserConfigByViewSchema(curSchema, toolConfigList);
 
-                // 关联父子
+            // 关联父子
+            (getChildList(curSchema)).push(curItem);
+
+            // 处理子节点
+            const properties = Object.keys(curObjNode.properties);
+            const orderedProperties = formUtils.orderProperties(properties, curSchema['ui:order']);
+
+            const childSchema = orderedProperties.map(item => ({
+                $$parentNode: curItem,
+                ...curObjNode.properties[item],
+                'ui:required': curObjNode.required && curObjNode.required.includes(item)
+            }));
+
+            eachQueue = [...eachQueue, ...childSchema];
+        } else {
+            // 计算当前节点
+            const curItem = getUserConfigByViewSchema(curSchema, toolConfigList);
+
+            // 关联父子
+            if (curItem) {
                 (getChildList(curSchema)).push(curItem);
-
-                // 处理子节点
-                const properties = Object.keys(curObjNode.properties);
-                const orderedProperties = formUtils.orderProperties(properties, curSchema['ui:order']);
-
-                const childSchema = orderedProperties.map(item => ({
-                    $$parentNode: curItem,
-                    ...curObjNode.properties[item],
-                    'ui:required': curObjNode.required && curObjNode.required.includes(item)
-                }));
-
-                eachQueue = [...eachQueue, ...childSchema];
-            } else {
-                // 计算当前节点
-                const curItem = getUserConfigByViewSchema(curSchema, toolConfigList);
-
-                // 关联父子
-                if (curItem) {
-                    (getChildList(curSchema)).push(curItem);
-                }
             }
         }
-
-        return {
-            componentList: componentList[0].childList,
-            formConfig: {
-                formFooter,
-                formProps
-            }
-        };
-    } catch (e) {
-        this.$message.error('导入失败，检查控制台报错信息');
-        throw e;
     }
+
+    return {
+        componentList: componentList[0].childList,
+        errorNode,
+        formConfig: {
+            formFooter,
+            formProps
+        }
+    };
 }

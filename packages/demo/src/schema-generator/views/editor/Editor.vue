@@ -242,7 +242,7 @@
                 });
             },
             handleImportSchema() {
-                componentWithDialog({
+                const instance = componentWithDialog({
                     VueComponent: ImportSchemaView,
                     dialogProps: {
                         title: '导入Schema',
@@ -250,8 +250,34 @@
                     },
                     componentListeners: {
                         onImport: (code) => {
-                            const data = jsonSchema2ComponentList(code, this.configTools);
-                            Object.assign(this, data);
+                            try {
+                                const data = jsonSchema2ComponentList(code, this.configTools);
+                                if (!data) return this.$message.warning('请先输入导入Schema');
+
+                                const { errorNode, ...resData } = data;
+                                Object.assign(this, resData);
+                                instance.close();
+
+                                // 存在导入失败的部分节点
+                                if (errorNode.length > 0 && Array.isArray(errorNode)) {
+                                    return this.$msgbox({
+                                        title: '如下节点导入失败，请检查数据',
+                                        message: this.$createElement(
+                                            'div', {
+                                                style: {
+                                                    padding: '10px 0'
+                                                }
+                                            },
+                                            errorNode.map(item => this.$createElement('pre', null, JSON.stringify(item, null, 4)))
+                                        )
+                                    });
+                                }
+
+                                return undefined;
+                            } catch (e) {
+                                this.$alert(e.message, '导入失败，详细查看控制台');
+                                throw e;
+                            }
                         }
                     }
                 });
