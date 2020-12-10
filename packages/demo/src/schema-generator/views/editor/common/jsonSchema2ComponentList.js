@@ -3,7 +3,7 @@
  */
 
 import { formUtils, getDefaultFormState } from '@lljj/vue-json-schema-form';
-import { generateEditorItem } from './editorData';
+import { generateEditorItem, deFormatFormLabelWidth } from './editorData';
 import { isObject } from './utils';
 
 function flatToolItems(toolItems) {
@@ -14,7 +14,7 @@ function flatToolItems(toolItems) {
 }
 
 const getDefaultFormDataBySchema = (() => {
-    // cache
+    // cache 避免重复计算了
     const cacheValueMap = new Map();
 
     return (schema) => {
@@ -66,6 +66,9 @@ function getUserConfigByViewSchema(curSchema, toolConfigList) {
 
         // 需要计算 value
         if (curSchema.$$key) {
+            const curSchemaUiOptions = formUtils.getUserUiOptions({
+                schema: curSchema
+            });
             componentValue = getDefaultFormDataBySchema(toolItem.componentPack.propsSchema);
             componentValue.property = curSchema.$$key;
             ['baseValue', 'options', 'rules'].forEach((curVal) => {
@@ -86,15 +89,13 @@ function getUserConfigByViewSchema(curSchema, toolConfigList) {
                     if (uiOptions) {
                         for (const k in uiOptions) {
                             if (uiOptions.hasOwnProperty(k)) {
-                                const tmpVal = curSchema['ui:options'][k];
-                                if (tmpVal !== undefined) uiOptions[k] = tmpVal;
+                                const tmpVal = curSchemaUiOptions[k];
+                                if (tmpVal !== undefined) uiOptions[k] = k === 'labelWidth' ? deFormatFormLabelWidth(tmpVal) : tmpVal;
                             }
                         }
                     }
                 }
             });
-
-            debugger;
         }
 
         return generateEditorItem({
@@ -181,12 +182,20 @@ export default function jsonSchema2ComponentList(code, toolItems) {
         }
     }
 
+    const formConfig = {};
+    if (formFooter) formConfig.formFooter = formFooter;
+    if (formProps) {
+        formConfig.formProps = {
+            ...formProps,
+            ...formProps.labelWidth ? {
+                labelWidth: deFormatFormLabelWidth(formProps.labelWidth)
+            } : {}
+        };
+    }
+
     return {
         componentList: componentList[0].childList,
         errorNode,
-        formConfig: {
-            formFooter,
-            formProps
-        }
+        formConfig
     };
 }

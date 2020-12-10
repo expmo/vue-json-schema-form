@@ -155,7 +155,7 @@ const tools = [
             title: 'DateTime范围(字符串)',
             componentPack: componentPackDateTimeRangeString
         }, {
-            title: '时间选择',
+            title: 'Time(字符串)',
             componentPack: componentPackTime
         }]
     }

@@ -254,8 +254,11 @@
                                 const data = jsonSchema2ComponentList(code, this.configTools);
                                 if (!data) return this.$message.warning('请先输入导入Schema');
 
-                                const { errorNode, ...resData } = data;
-                                Object.assign(this, resData);
+                                const { errorNode, componentList, formConfig } = data;
+                                this.componentList = componentList;
+                                if (formConfig.formProps) Object.assign(this.formConfig.formProps, formConfig.formProps);
+                                if (formConfig.formFooter) Object.assign(this.formConfig.formFooter, formConfig.formFooter);
+
                                 instance.close();
 
                                 // 存在导入失败的部分节点

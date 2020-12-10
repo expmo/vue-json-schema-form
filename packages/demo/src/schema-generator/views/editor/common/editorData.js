@@ -42,6 +42,11 @@ export function formatFormLabelWidth(value) {
     return value ? `${value * 4}px` : undefined;
 }
 
+// 转回来
+export function deFormatFormLabelWidth(value) {
+    return parseFloat(value) / 4;
+}
+
 function filterObj(obj, filter = (key, value) => (isObject(value) && !isEmptyObject(value)) || value !== undefined) {
     const result = {};
     if (!isObject(obj)) return result;
